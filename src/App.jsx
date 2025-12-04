@@ -1667,7 +1667,7 @@ const handleCheckoutSubmit = async (e) => {
 
   try{
     // Backend server URL ব্যবহার করুন
-    const res = await fetch("https://your-backend-server.com/order_create_proxy.php", {
+    const res = await fetch("https://chatbot.iqibd.com/order_create_proxy.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
