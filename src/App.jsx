@@ -1644,13 +1644,13 @@ Land Rover | Range Rover Evoque | SINOPEC JUSTAR J700\\A3/B4/SP 5W-40 | SINOPEC 
 
 const handleCheckoutSubmit = async (e) => {
   e.preventDefault();
-
-  if(!cart || cart.length === 0){
+  
+  if (!cart || cart.length === 0) {
     alert("Cart is empty!");
     return;
   }
 
-  const item = cart[0]; // single product checkout
+  const item = cart[0]; // Single product
   const delivery_cost = shippingZone === 'inside' ? 0 : 50;
 
   const payload = {
@@ -1665,8 +1665,7 @@ const handleCheckoutSubmit = async (e) => {
     total_price: item.qty * item.price + delivery_cost
   };
 
-  try{
-    // Backend server URL ব্যবহার করুন
+  try {
     const res = await fetch("https://chatbot.iqibd.com/order_create_proxy.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1674,22 +1673,22 @@ const handleCheckoutSubmit = async (e) => {
     });
 
     const data = await res.json();
-    console.log("Backend Response:", data);
+    console.log("API Response:", data);
 
-    if(res.ok && data.statusCode === 200){ 
+    if(res.ok && data.statusCode === 200){
       alert("✅ Order Created Successfully!");
       setCheckoutStep("success");
-      setLastOrder({details: payload, items: [item], total: payload.total_price});
       localStorage.removeItem("cart");
     } else {
       alert("❌ Order Failed: " + (data.message || "Unknown error"));
     }
 
-  }catch(err){
+  } catch(err) {
     console.error(err);
     alert("⚠️ Something went wrong!");
   }
 };
+
 
 
 
@@ -1905,4 +1904,5 @@ const handleCheckoutSubmit = async (e) => {
       )}
     </div>
   );
+
 }
