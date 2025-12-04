@@ -723,21 +723,26 @@ export default function App() {
   const handleCheckoutSubmit = async (e) => {
   e.preventDefault();
 
+  if(cart.length === 0){
+    alert("Cart is empty!");
+    return;
+  }
+
   const orderData = {
     items: cart.map(item => ({
       id: item.id,
-      name: item.name,
+      name: pAttr(item, 'name'),
       qty: item.qty,
       price: item.price
     })),
     total: grandTotal,
     details: { ...formData },
     shippingZone,
-    discount: discountAmount
+    discount: discountAmount,
   };
 
   try {
-    const response = await fetch('https://chatbot.iqibd.com/save_order.php', {
+    const response = await fetch('https://yourdomain.com/save_order.php', { // <-- আপনার PHP সার্ভারের URL
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
@@ -745,20 +750,22 @@ export default function App() {
 
     const result = await response.json();
 
-    if (result.success) {
+    if(result.success){
+      // Order success
       setLastOrder(orderData);
       setCheckoutStep('success');
       setShowConfetti(true);
       setCart([]);
       setAppliedDiscount(0);
       setCouponCode('');
-      setFormData({ phone: '', name: '', address: '' });
+      setFormData({ phone:'', name:'', address:'' });
     } else {
-      alert('Order failed: ' + result.message);
+      alert("Something went wrong: " + result.message);
     }
+
   } catch (err) {
     console.error(err);
-    alert('Something went wrong');
+    alert("Something went wrong. Check console for details.");
   }
 };
 
