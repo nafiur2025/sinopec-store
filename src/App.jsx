@@ -1696,69 +1696,40 @@ const handleCheckoutSubmit = async (e) => {
 
 
 
-              {/* STEP 3: SUCCESS */}
-              {checkoutStep === 'success' && (
-                <div className="flex flex-col items-center justify-center py-8 text-center animate-in zoom-in duration-300">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600">
-                    <Check size={40} strokeWidth={4} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('orderPlaced')}</h3>
-                  <p className="text-gray-500 mb-8">
-                    {t('weCall')}
-                  </p>
-                  
-                  {/* Order Summary */}
-                  {lastOrder && (
-                    <div className="bg-gray-50 p-4 rounded-xl w-full text-left mb-6 text-sm border border-gray-100 shadow-sm">
-                        <h4 className="font-bold text-gray-800 uppercase text-xs mb-3 border-b border-gray-200 pb-2">{t('orderSummary')}</h4>
-                        
-                        <div className="space-y-2 mb-4">
-                            <div>
-                                <span className="text-gray-500 text-xs block">{t('name')}</span>
-                                <span className="font-bold">{lastOrder.details.name}</span>
-                            </div>
-                            <div>
-                                <span className="text-gray-500 text-xs block">{t('phone')}</span>
-                                <span className="font-bold">{lastOrder.details.phone}</span>
-                            </div>
-                            <div>
-                                <span className="text-gray-500 text-xs block">{t('address')}</span>
-                                <span className="font-medium text-gray-700">{lastOrder.details.address}</span>
-                            </div>
-                        </div>
+              {checkoutStep === 'success' && lastOrder && (
+  <div className="flex flex-col items-center justify-center py-8 text-center">
+    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600">
+      <Check size={40} strokeWidth={4} />
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-2">Order Placed!</h3>
+    <p className="text-gray-500 mb-8">We will call you soon.</p>
 
-                        <div className="border-t border-gray-200 pt-3">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-bold text-gray-500 uppercase">{t('items')}</span>
-                                <span className="text-xs font-bold text-gray-500 uppercase">{t('qty')}</span>
-                            </div>
-                            {lastOrder.items.map((item, i) => (
-                                <div key={i} className="flex justify-between items-center mb-1">
-                                    <span className="text-gray-700 text-xs truncate w-3/4">{pAttr(item, 'name')}</span>
-                                    <span className="font-bold text-gray-900">{lang === 'bn' ? toBnNum(item.qty) : item.qty}</span>
-                                </div>
-                            ))}
-                        </div>
-                        
-                        <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
-                            <span className="font-bold text-gray-800">{t('total')}</span>
-                            <span className="font-extrabold text-[#E60012] text-lg">{formatPrice(lastOrder.total)}</span>
-                        </div>
-                    </div>
-                  )}
+    <div className="bg-gray-50 p-4 rounded-xl w-full text-left mb-6 text-sm border border-gray-100 shadow-sm">
+      <h4 className="font-bold text-gray-800 uppercase text-xs mb-3 border-b border-gray-200 pb-2">Order Summary</h4>
+      <div className="space-y-2 mb-4">
+        <div>
+          <span className="text-gray-500 text-xs block">Name</span>
+          <span className="font-bold">{lastOrder.details.name}</span>
+        </div>
+        <div>
+          <span className="text-gray-500 text-xs block">Phone</span>
+          <span className="font-bold">{lastOrder.details.phone}</span>
+        </div>
+        <div>
+          <span className="text-gray-500 text-xs block">Address</span>
+          <span className="text-gray-700 font-medium">{lastOrder.details.address}</span>
+        </div>
+      </div>
+      <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
+        <span className="font-bold text-gray-800">Total</span>
+        <span className="font-extrabold text-[#E60012] text-lg">{lastOrder.total}</span>
+      </div>
+    </div>
 
-                  <button 
-                    onClick={() => { setIsCartOpen(false); setCheckoutStep('cart'); }}
-                    className="text-[#E60012] font-bold"
-                  >
-                    {t('continueShopping')}
-                  </button>
-                  {showConfetti && (
-                     <Confetti />
-                  )}
-                </div>
-              )}
-            </div>
+    <button onClick={() => setCheckoutStep('cart')} className="text-[#E60012] font-bold">Continue Shopping</button>
+  </div>
+)}
+
 
             {/* Drawer Footer Actions */}
             {checkoutStep !== 'success' && cart.length > 0 && (
