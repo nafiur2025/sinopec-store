@@ -1641,22 +1641,30 @@ Land Rover | Range Rover Evoque | SINOPEC JUSTAR J700\\A3/B4/SP 5W-40 | SINOPEC 
     </div>
   </form>
 )}
+
 const handleCheckoutSubmit = async (e) => {
   e.preventDefault();
 
-  // Shipping Cost
+  if (!cart || cart.length === 0) {
+    alert("Cart is empty!");
+    return;
+  }
+
+  const item = cart[0]; // Single product checkout
+
   const delivery_cost = shippingZone === "inside" ? 0 : 50;
 
   const payload = {
-    phone: formData.phone,
     name: formData.name,
+    phone: formData.phone,
     address: formData.address,
-    address_type: shippingZone === 'inside' ? "Inside Dhaka" : "Outside Dhaka",
-    product_grade: cart[0]?.viscosity,
-    quantity: cart[0]?.qty,
-    unit_price: cart[0]?.price,
-    total_price: (cart[0]?.qty * cart[0]?.price) + delivery_cost,
-    delivery_cost: delivery_cost
+    address_type: shippingZone === "inside" ? "Inside Dhaka" : "Outside Dhaka",
+
+    product_grade: item.viscosity,
+    quantity: item.qty,
+    unit_price: item.price,
+    delivery_cost: delivery_cost,
+    total_price: item.qty * item.price + delivery_cost
   };
 
   try {
@@ -1667,27 +1675,28 @@ const handleCheckoutSubmit = async (e) => {
     });
 
     const result = await response.json();
-    console.log("Nuport Response:", result);
+    console.log("API Response:", result);
 
+    // ✅ Correct success check
     if (response.ok) {
-      // Save last order details (for success screen)
-      setLastOrder({
-        items: [...cart],
-        total: payload.total_price,
-        details: { ...formData }
-      });
+      alert(result.message || "Order Created Successfully!");
 
-      setCheckoutStep("success");
-      setShowConfetti(true);
-      setCart([]); // Empty cart
+      // 🟢 Clear Cart
+      localStorage.removeItem("cart");
+
+      // Optional redirect
+      // window.location.href = "/thank-you";
     } else {
-      alert("Order Failed: " + (result.error || "Something went wrong"));
+      alert("Order Failed: " + (result.message || "Unknown error!"));
     }
+
   } catch (error) {
-    console.error(error);
-    alert("Network Error!");
+    console.error("Error:", error);
+    alert("Something went wrong! Please try again.");
   }
 };
+
+
 
               {/* STEP 3: SUCCESS */}
               {checkoutStep === 'success' && (
