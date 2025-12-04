@@ -720,24 +720,48 @@ export default function App() {
     }));
   };
 
-  const handleCheckoutSubmit = (e) => {
-    e.preventDefault();
-    // Save order details before clearing cart
-    setLastOrder({
-      items: [...cart],
-      total: grandTotal,
-      details: { ...formData }
-    });
-    
-    setCheckoutStep('success');
-    setShowConfetti(true);
-    setCart([]);
-    setAppliedDiscount(0);
-    setCouponCode('');
-    // Reset form data optionally, but keeping it might be useful if they order again? 
-    // Let's reset for a clean state next time.
-    setFormData({ phone: '', name: '', address: '' });
+  const handleCheckoutSubmit = async (e) => {
+  e.preventDefault();
+
+  const orderData = {
+    items: cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      qty: item.qty,
+      price: item.price
+    })),
+    total: grandTotal,
+    details: { ...formData },
+    shippingZone,
+    discount: discountAmount
   };
+
+  try {
+    const response = await fetch('https://chatbot.iqibd.com/save_order.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setLastOrder(orderData);
+      setCheckoutStep('success');
+      setShowConfetti(true);
+      setCart([]);
+      setAppliedDiscount(0);
+      setCouponCode('');
+      setFormData({ phone: '', name: '', address: '' });
+    } else {
+      alert('Order failed: ' + result.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Something went wrong');
+  }
+};
+
 
   // --- Gemini API Logic ---
 
@@ -1526,209 +1550,146 @@ Land Rover | Range Rover Evoque | SINOPEC JUSTAR J700\\A3/B4/SP 5W-40 | SINOPEC 
               )}
 
               {/* STEP 2: CHECKOUT FORM */}
-{checkoutStep === 'form' && (
-  <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-4">
+              {checkoutStep === 'form' && (
+                <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-4">
+                  
+                  {/* Delivery Area Selection */}
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
+                    <label className="text-xs font-bold text-gray-600 uppercase mb-2 block">{t('deliveryArea')}</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShippingZone('inside')}
+                        className={`p-3 rounded-lg border-2 text-center transition-all ${
+                          shippingZone === 'inside' 
+                            ? 'border-[#E60012] bg-white shadow-sm' 
+                            : 'border-transparent bg-blue-100/50 text-gray-500'
+                        }`}
+                      >
+                        <div className="font-bold text-sm text-gray-900">{t('insideDhaka')}</div>
+                        <div className="text-xs text-green-600 font-bold mt-1">{t('free')}</div>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setShippingZone('outside')}
+                        className={`p-3 rounded-lg border-2 text-center transition-all ${
+                          shippingZone === 'outside' 
+                            ? 'border-[#E60012] bg-white shadow-sm' 
+                            : 'border-transparent bg-blue-100/50 text-gray-500'
+                        }`}
+                      >
+                        <div className="font-bold text-sm text-gray-900">{t('outsideDhaka')}</div>
+                        <div className="text-xs text-gray-500 mt-1">{formatPrice(50)}</div>
+                      </button>
+                    </div>
+                  </div>
 
-    {/* Delivery Area */}
-    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
-      <label className="text-xs font-bold text-gray-600 uppercase mb-2 block">{t('deliveryArea')}</label>
-      <div className="grid grid-cols-2 gap-3">
-        
-        {/* Inside Dhaka */}
-        <button
-          type="button"
-          onClick={() => setShippingZone('inside')}
-          className={`p-3 rounded-lg border-2 text-center transition-all ${
-            shippingZone === 'inside' 
-              ? 'border-[#E60012] bg-white shadow-sm' 
-              : 'border-transparent bg-blue-100/50 text-gray-500'
-          }`}
-        >
-          <div className="font-bold text-sm text-gray-900">{t('insideDhaka')}</div>
-          <div className="text-xs text-green-600 font-bold mt-1">{t('free')}</div>
-        </button>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('phone')}</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 text-gray-400" size={18} />
+                      <input type="tel" name="phone" required placeholder="017XXXXXXXX" onChange={handleInputChange} value={formData.phone} className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#E60012] focus:ring-1 focus:ring-[#E60012]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('name')}</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                      <input type="text" required placeholder="Your Name" name="name" onChange={handleInputChange} value={formData.name} className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#E60012] focus:ring-1 focus:ring-[#E60012]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('address')}</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
+                      <textarea required placeholder="House, Road, Area, City" name="address" rows="2" onChange={handleInputChange} value={formData.address} className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#E60012] focus:ring-1 focus:ring-[#E60012]"></textarea>
+                    </div>
+                  </div>
 
-        {/* Outside Dhaka */}
-        <button
-          type="button"
-          onClick={() => setShippingZone('outside')}
-          className={`p-3 rounded-lg border-2 text-center transition-all ${
-            shippingZone === 'outside' 
-              ? 'border-[#E60012] bg-white shadow-sm' 
-              : 'border-transparent bg-blue-100/50 text-gray-500'
-          }`}
-        >
-          <div className="font-bold text-sm text-gray-900">{t('outsideDhaka')}</div>
-          <div className="text-xs text-gray-500 mt-1">{formatPrice(50)}</div>
-        </button>
+                  <div className="pt-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('payment')}</label>
+                    <div className="grid grid-cols-2 gap-3 mt-1">
+                      <label className="border-2 border-[#E60012] bg-red-50 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer relative">
+                        <input type="radio" name="payment" defaultChecked className="hidden" />
+                        <div className="absolute top-2 right-2 text-[#E60012]">
+                          <Check size={16} strokeWidth={4} />
+                        </div>
+                        <span className="font-bold text-gray-900 text-center text-sm">{t('cod')}</span>
+                        <span className="text-[10px] text-gray-500 text-center">{t('payReceive')}</span>
+                      </label>
+                      <label className="border border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer opacity-60">
+                         <span className="font-bold text-gray-500 text-center text-sm">{t('onlinePay')}</span>
+                         <span className="text-[10px] text-gray-400 text-center">{t('comingSoon')}</span>
+                      </label>
+                    </div>
+                  </div>
+                </form>
+              )}
 
-      </div>
-    </div>
+              {/* STEP 3: SUCCESS */}
+              {checkoutStep === 'success' && (
+                <div className="flex flex-col items-center justify-center py-8 text-center animate-in zoom-in duration-300">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600">
+                    <Check size={40} strokeWidth={4} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('orderPlaced')}</h3>
+                  <p className="text-gray-500 mb-8">
+                    {t('weCall')}
+                  </p>
+                  
+                  {/* Order Summary */}
+                  {lastOrder && (
+                    <div className="bg-gray-50 p-4 rounded-xl w-full text-left mb-6 text-sm border border-gray-100 shadow-sm">
+                        <h4 className="font-bold text-gray-800 uppercase text-xs mb-3 border-b border-gray-200 pb-2">{t('orderSummary')}</h4>
+                        
+                        <div className="space-y-2 mb-4">
+                            <div>
+                                <span className="text-gray-500 text-xs block">{t('name')}</span>
+                                <span className="font-bold">{lastOrder.details.name}</span>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 text-xs block">{t('phone')}</span>
+                                <span className="font-bold">{lastOrder.details.phone}</span>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 text-xs block">{t('address')}</span>
+                                <span className="font-medium text-gray-700">{lastOrder.details.address}</span>
+                            </div>
+                        </div>
 
-    {/* Phone */}
-    <div>
-      <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('phone')}</label>
-      <div className="relative">
-        <Phone className="absolute left-3 top-3 text-gray-400" size={18} />
-        <input
-          type="tel"
-          name="phone"
-          required
-          placeholder="017XXXXXXXX"
-          onChange={handleInputChange}
-          value={formData.phone}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#E60012] focus:ring-1 focus:ring-[#E60012]"
-        />
-      </div>
-    </div>
+                        <div className="border-t border-gray-200 pt-3">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase">{t('items')}</span>
+                                <span className="text-xs font-bold text-gray-500 uppercase">{t('qty')}</span>
+                            </div>
+                            {lastOrder.items.map((item, i) => (
+                                <div key={i} className="flex justify-between items-center mb-1">
+                                    <span className="text-gray-700 text-xs truncate w-3/4">{pAttr(item, 'name')}</span>
+                                    <span className="font-bold text-gray-900">{lang === 'bn' ? toBnNum(item.qty) : item.qty}</span>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
+                            <span className="font-bold text-gray-800">{t('total')}</span>
+                            <span className="font-extrabold text-[#E60012] text-lg">{formatPrice(lastOrder.total)}</span>
+                        </div>
+                    </div>
+                  )}
 
-    {/* Name */}
-    <div>
-      <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('name')}</label>
-      <div className="relative">
-        <User className="absolute left-3 top-3 text-gray-400" size={18} />
-        <input
-          type="text"
-          required
-          placeholder="Your Name"
-          name="name"
-          onChange={handleInputChange}
-          value={formData.name}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#E60012] focus:ring-1 focus:ring-[#E60012]"
-        />
-      </div>
-    </div>
-
-    {/* Address */}
-    <div>
-      <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('address')}</label>
-      <div className="relative">
-        <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
-        <textarea
-          required
-          placeholder="House, Road, Area, City"
-          name="address"
-          rows="2"
-          onChange={handleInputChange}
-          value={formData.address}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#E60012] focus:ring-1 focus:ring-[#E60012]"
-        ></textarea>
-      </div>
-    </div>
-
-    {/* Payment */}
-    <div className="pt-2">
-      <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t('payment')}</label>
-      <div className="grid grid-cols-2 gap-3 mt-1">
-        
-        {/* COD */}
-        <label className="border-2 border-[#E60012] bg-red-50 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer relative">
-          <input type="radio" name="payment" defaultChecked className="hidden" />
-          <div className="absolute top-2 right-2 text-[#E60012]">
-            <Check size={16} strokeWidth={4} />
-          </div>
-          <span className="font-bold text-gray-900 text-center text-sm">{t('cod')}</span>
-          <span className="text-[10px] text-gray-500 text-center">{t('payReceive')}</span>
-        </label>
-
-        {/* Online Pay (disabled) */}
-        <label className="border border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer opacity-60">
-          <span className="font-bold text-gray-500 text-center text-sm">{t('onlinePay')}</span>
-          <span className="text-[10px] text-gray-400 text-center">{t('comingSoon')}</span>
-        </label>
-
-      </div>
-    </div>
-  </form>
-)}
-
-const handleCheckoutSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!cart || cart.length === 0) {
-    alert("Cart is empty!");
-    return;
-  }
-
-  const item = cart[0]; // Single product
-  const delivery_cost = shippingZone === 'inside' ? 0 : 50;
-
-  const payload = {
-    name: formData.name,
-    phone: formData.phone,
-    address: formData.address,
-    address_type: shippingZone === 'inside' ? 'Inside Dhaka' : 'Outside Dhaka',
-    product_grade: item.viscosity,
-    quantity: item.qty,
-    unit_price: item.price,
-    delivery_cost,
-    total_price: item.qty * item.price + delivery_cost
-  };
-
-  try {
-    const res = await fetch("https://chatbot.iqibd.com/order_create_proxy.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json();
-    console.log("API Response:", data);
-
-    if(res.ok && data.statusCode === 200){
-      alert("✅ Order Created Successfully!");
-      setCheckoutStep("success");
-      localStorage.removeItem("cart");
-    } else {
-      alert("❌ Order Failed: " + (data.message || "Unknown error"));
-    }
-
-  } catch(err) {
-    console.error(err);
-    alert("⚠️ Something went wrong!");
-  }
-};
-
-
-
-
-
-
-
-              {checkoutStep === 'success' && lastOrder && (
-  <div className="flex flex-col items-center justify-center py-8 text-center">
-    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600">
-      <Check size={40} strokeWidth={4} />
-    </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-2">Order Placed!</h3>
-    <p className="text-gray-500 mb-8">We will call you soon.</p>
-
-    <div className="bg-gray-50 p-4 rounded-xl w-full text-left mb-6 text-sm border border-gray-100 shadow-sm">
-      <h4 className="font-bold text-gray-800 uppercase text-xs mb-3 border-b border-gray-200 pb-2">Order Summary</h4>
-      <div className="space-y-2 mb-4">
-        <div>
-          <span className="text-gray-500 text-xs block">Name</span>
-          <span className="font-bold">{lastOrder.details.name}</span>
-        </div>
-        <div>
-          <span className="text-gray-500 text-xs block">Phone</span>
-          <span className="font-bold">{lastOrder.details.phone}</span>
-        </div>
-        <div>
-          <span className="text-gray-500 text-xs block">Address</span>
-          <span className="text-gray-700 font-medium">{lastOrder.details.address}</span>
-        </div>
-      </div>
-      <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-        <span className="font-bold text-gray-800">Total</span>
-        <span className="font-extrabold text-[#E60012] text-lg">{lastOrder.total}</span>
-      </div>
-    </div>
-
-    <button onClick={() => setCheckoutStep('cart')} className="text-[#E60012] font-bold">Continue Shopping</button>
-  </div>
-)}
-
+                  <button 
+                    onClick={() => { setIsCartOpen(false); setCheckoutStep('cart'); }}
+                    className="text-[#E60012] font-bold"
+                  >
+                    {t('continueShopping')}
+                  </button>
+                  {showConfetti && (
+                     <Confetti />
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Drawer Footer Actions */}
             {checkoutStep !== 'success' && cart.length > 0 && (
@@ -1904,5 +1865,4 @@ const handleCheckoutSubmit = async (e) => {
       )}
     </div>
   );
-
 }
