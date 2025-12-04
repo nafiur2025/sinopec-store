@@ -742,7 +742,7 @@ export default function App() {
   };
 
   try {
-    const response = await fetch('https://yourdomain.com/save_order.php', { // <-- আপনার PHP সার্ভারের URL
+    const response = await fetch('https://chatbot.iqibd.com/save_order.php', { // <-- আপনার PHP সার্ভারের URL
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
