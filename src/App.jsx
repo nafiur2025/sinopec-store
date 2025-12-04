@@ -1650,44 +1650,70 @@ const handleCheckoutSubmit = async (e) => {
     return;
   }
 
-  const item = cart[0]; // Single product checkout
-
+  // Delivery cost
   const delivery_cost = shippingZone === "inside" ? 0 : 50;
 
-  const payload = {
-    name: formData.name,
-    phone: formData.phone,
-    address: formData.address,
-    address_type: shippingZone === "inside" ? "Inside Dhaka" : "Outside Dhaka",
+  // Prepare products array
+  const productMap = {
+    "xplore 10w-30 4t": "0609100063002607",
+    "xplore 10w-40 4t": "0609100063002586",
+    "justar j700 5w-30": "0609100063003559",
+    "justar j700 5w-40": "0609100063003558",
+    "justar j700 0w-20": "0609100063003555",
+    "justar j600 5w-30": "0609100063003535",
+    "justar j500 10w-40": "0609100063003534"
+  };
 
-    product_grade: item.viscosity,
+  const products = cart.map(item => ({
+    sku: productMap[item.viscosity.toLowerCase()] || "0609100063005468",
+    productId: "", // Optional: add productId mapping if needed
     quantity: item.qty,
-    unit_price: item.price,
-    delivery_cost: delivery_cost,
-    total_price: item.qty * item.price + delivery_cost
+    price: item.price
+  }));
+
+  // Total amount calculation
+  const itemsTotal = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const totalAmount = itemsTotal + delivery_cost;
+
+  // Prepare payload
+  const payload = {
+    autoApprove: false,
+    isStockTransfer: false,
+    distributorAdvancePayment: 0,
+    deliveryCharge: delivery_cost,
+    totalAmount: totalAmount,
+    pickUpLocationId: "Auto-1",
+    source: "FACEBOOK",
+    products: products,
+    distributor: {
+      name: formData.name,
+      phone: "+880" + formData.phone.replace(/^0/, ""),
+      address: `${formData.address} [${shippingZone === "inside" ? "Inside Dhaka" : "Outside Dhaka"}]`,
+      type: "E_COMMERCE_CUSTOMER"
+    }
   };
 
   try {
     const response = await fetch("https://chatbot.iqibd.com/order_create.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
     console.log("API Response:", result);
 
-    // ✅ Correct success check
     if (response.ok) {
-      alert(result.message || "Order Created Successfully!");
-
-      // 🟢 Clear Cart
+      alert(result.message || "✅ Order Created Successfully!");
       localStorage.removeItem("cart");
-
-      // Optional redirect
-      // window.location.href = "/thank-you";
+      setCheckoutStep("success");
+      setLastOrder({
+        details: formData,
+        items: cart,
+        total: totalAmount
+      });
     } else {
-      alert("Order Failed: " + (result.message || "Unknown error!"));
+      alert("❌ Order Failed: " + (result.message || "Unknown error"));
     }
 
   } catch (error) {
@@ -1695,6 +1721,7 @@ const handleCheckoutSubmit = async (e) => {
     alert("Something went wrong! Please try again.");
   }
 };
+
 
 
 
