@@ -1644,83 +1644,44 @@ Land Rover | Range Rover Evoque | SINOPEC JUSTAR J700\\A3/B4/SP 5W-40 | SINOPEC 
 
 const handleCheckoutSubmit = async (e) => {
   e.preventDefault();
+  const item = cart[0];
+  const delivery_cost = shippingZone === 'inside' ? 0 : 50;
 
-  if (!cart || cart.length === 0) {
-    alert("Cart is empty!");
-    return;
-  }
-
-  // Delivery cost
-  const delivery_cost = shippingZone === "inside" ? 0 : 50;
-
-  // Prepare products array
-  const productMap = {
-    "xplore 10w-30 4t": "0609100063002607",
-    "xplore 10w-40 4t": "0609100063002586",
-    "justar j700 5w-30": "0609100063003559",
-    "justar j700 5w-40": "0609100063003558",
-    "justar j700 0w-20": "0609100063003555",
-    "justar j600 5w-30": "0609100063003535",
-    "justar j500 10w-40": "0609100063003534"
-  };
-
-  const products = cart.map(item => ({
-    sku: productMap[item.viscosity.toLowerCase()] || "0609100063005468",
-    productId: "", // Optional: add productId mapping if needed
-    quantity: item.qty,
-    price: item.price
-  }));
-
-  // Total amount calculation
-  const itemsTotal = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
-  const totalAmount = itemsTotal + delivery_cost;
-
-  // Prepare payload
   const payload = {
-    autoApprove: false,
-    isStockTransfer: false,
-    distributorAdvancePayment: 0,
-    deliveryCharge: delivery_cost,
-    totalAmount: totalAmount,
-    pickUpLocationId: "Auto-1",
-    source: "FACEBOOK",
-    products: products,
-    distributor: {
-      name: formData.name,
-      phone: "+880" + formData.phone.replace(/^0/, ""),
-      address: `${formData.address} [${shippingZone === "inside" ? "Inside Dhaka" : "Outside Dhaka"}]`,
-      type: "E_COMMERCE_CUSTOMER"
-    }
+    name: formData.name,
+    phone: formData.phone,
+    address: formData.address,
+    address_type: shippingZone === 'inside' ? 'Inside Dhaka' : 'Outside Dhaka',
+    product_grade: item.viscosity,
+    quantity: item.qty,
+    unit_price: item.price,
+    delivery_cost,
+    total_price: item.qty*item.price + delivery_cost
   };
 
   try {
-    const response = await fetch("https://chatbot.iqibd.com/order_create.php", {
+    const res = await fetch("https://chatbot.iqibd.com/order_create.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+    const data = await res.json();
+    console.log("Backend Response:", data);
 
-    const result = await response.json();
-    console.log("API Response:", result);
-
-    if (response.ok) {
-      alert(result.message || "✅ Order Created Successfully!");
-      localStorage.removeItem("cart");
+    if(res.ok){
+      alert("✅ Order Created Successfully!");
       setCheckoutStep("success");
-      setLastOrder({
-        details: formData,
-        items: cart,
-        total: totalAmount
-      });
+      localStorage.removeItem("cart");
     } else {
-      alert("❌ Order Failed: " + (result.message || "Unknown error"));
+      alert("❌ Order Failed: " + (data.message || "Unknown error"));
     }
 
-  } catch (error) {
-    console.error("Error:", error);
-    alert("Something went wrong! Please try again.");
+  } catch(err){
+    console.error(err);
+    alert("⚠️ Something went wrong!");
   }
 };
+
 
 
 
